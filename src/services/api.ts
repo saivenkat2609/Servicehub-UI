@@ -1,146 +1,66 @@
-import type { AuthResponse } from '../types';
+import axios from 'axios';
+import type { AuthResponse, User } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:6000/api';
+
+// Create axios instance with credentials enabled for cookies
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  withCredentials: true, // Important for sending cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const api = {
-  async register(email: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Registration failed');
-    }
-
-    return response.json();
-  },
-
+  // Auth endpoints
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+    const response = await axiosInstance.post<AuthResponse>('/auth/login', {
+      email,
+      password,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
-    }
-
-    return response.json();
+    return response.data;
   },
 
-  async sendNotification(token: string, targetEmail: string, message: string, type: string = 'info') {
-    const response = await fetch(`${API_URL}/notifications/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ targetEmail, message, type }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to send notification');
-    }
-
-    return response.json();
+  async logout(): Promise<void> {
+    await axiosInstance.post('/auth/logout');
   },
 
-  async sendBulkNotifications(
-    token: string,
-    notifications: Array<{ targetEmail: string; message: string; type?: string }>
-  ) {
-    const response = await fetch(`${API_URL}/notifications/send-bulk`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ notifications }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to send bulk notifications');
-    }
-
-    return response.json();
+  async getCurrentUser(): Promise<User> {
+    const response = await axiosInstance.get<User>('/auth/me');
+    return response.data;
   },
 
-  async getConnectedUsers(token: string) {
-    const response = await fetch(`${API_URL}/notifications/connected-users`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to get connected users');
-    }
-
-    return response.json();
+  // Notification endpoints
+  async getUserNotifications() {
+    const response = await axiosInstance.get('/notifications');
+    return response.data;
   },
 
-  async getUserNotifications(token: string) {
-    const response = await fetch(`${API_URL}/notifications/user`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+  async markNotificationAsOpened(notificationId: string) {
+    const response = await axiosInstance.post('/notifications/mark-opened', {
+      notificationId,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to get user notifications');
-    }
-
-    return response.json();
+    return response.data;
   },
 
-  async markNotificationAsRead(token: string, notificationId: string) {
-    const response = await fetch(`${API_URL}/notifications/mark-read/${notificationId}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+  // SSE connection
+  createSSEConnection(): EventSource {
+    // For SSE with cookies, we need to use the full URL
+    // Cookies are automatically included by the browser
+    return new EventSource(`${API_URL}/events`, {
+      withCredentials: true,
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to mark notification as read');
-    }
-
-    return response.json();
   },
 
-  async trackNotificationOpen(notificationId: string, userId: number | undefined, email: string) {
-    const response = await fetch(`${API_URL}/notifications/track-open`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        notificationId,
-        userId,
-        email,
-        openedAt: new Date().toISOString(),
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to track notification open');
-    }
-
-    return response.json();
+  // Debug endpoints
+  async getConnectedUsers() {
+    const response = await axiosInstance.get('/debug/connected-users');
+    return response.data;
   },
 
-  createSSEConnection(token: string): EventSource {
-    return new EventSource(`${API_URL}/sse?token=${token}`);
+  async getStoredNotifications() {
+    const response = await axiosInstance.get('/debug/stored-notifications');
+    return response.data;
   },
 };

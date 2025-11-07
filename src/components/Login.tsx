@@ -8,14 +8,11 @@ import {
   Button,
   Typography,
   Alert,
-  Tab,
-  Tabs,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 export const Login = () => {
-  const [tabValue, setTabValue] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,15 +26,12 @@ export const Login = () => {
     setLoading(true);
 
     try {
-      const isLogin = tabValue === 0;
-      const response = isLogin
-        ? await api.login(email, password)
-        : await api.register(email, password);
-
-      login(response.token, response.user);
+      const response = await api.login(email, password);
+      login(response.user);
       navigate('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'An error occurred';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -56,22 +50,23 @@ export const Login = () => {
       <Card sx={{ width: 400, boxShadow: 3 }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" align="center" gutterBottom fontWeight="bold">
-            keylcop
-          </Typography>
-          <Typography variant="subtitle1" align="center" color="text.secondary" sx={{ mb: 3 }}>
             Notification System
           </Typography>
-
-          <Tabs value={tabValue} onChange={(_, v) => setTabValue(v)} sx={{ mb: 3 }}>
-            <Tab label="Login" />
-            <Tab label="Register" />
-          </Tabs>
+          <Typography variant="subtitle1" align="center" color="text.secondary" sx={{ mb: 3 }}>
+            Login to view notifications
+          </Typography>
 
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
             </Alert>
           )}
+
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Use any user from 1-6:<br/>
+            Email: john.doe@company.com<br/>
+            Password: password123
+          </Alert>
 
           <form onSubmit={handleSubmit}>
             <TextField
@@ -102,7 +97,7 @@ export const Login = () => {
               disabled={loading}
               sx={{ mt: 3 }}
             >
-              {loading ? 'Please wait...' : tabValue === 0 ? 'Login' : 'Register'}
+              {loading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
         </CardContent>

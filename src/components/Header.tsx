@@ -25,8 +25,12 @@ export const Header = () => {
     handleClose();
   };
 
-  const getInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -92,7 +96,7 @@ export const Header = () => {
                 fontWeight: 'bold',
               }}
             >
-              {user ? getInitials(user.email) : 'U'}
+              {user ? getInitials(user.name) : 'U'}
             </Avatar>
           </IconButton>
 
@@ -111,6 +115,9 @@ export const Header = () => {
           >
             <MenuItem disabled>
               <Typography variant="body2" color="text.secondary">
+                {user?.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block">
                 {user?.email}
               </Typography>
             </MenuItem>

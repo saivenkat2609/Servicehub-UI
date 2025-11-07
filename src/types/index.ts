@@ -1,10 +1,11 @@
 export interface User {
-  id: string;
+  userId: number;
   email: string;
+  name: string;
 }
 
 export interface AuthResponse {
-  token: string;
+  success: boolean;
   user: User;
 }
 
@@ -16,10 +17,13 @@ export interface Notification {
   content: string;
   priority?: 'low' | 'medium' | 'high' | 'critical';
   type: 'info' | 'success' | 'warning' | 'error' | 'release_notes' | string;
+  severity?: 'info' | 'warning' | 'error';
   message?: string; // For backward compatibility
   timestamp: string;
   read: boolean;
+  opened: boolean;
   readAt?: string;
+  openedAt?: string;
   metadata?: {
     sentBy?: string;
     sentAt?: string;

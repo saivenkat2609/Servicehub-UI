@@ -25,14 +25,14 @@ export const NotificationBell = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { token, user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!isAuthenticated) return;
 
     // Create SSE connection
-    const eventSource = api.createSSEConnection(token);
+    const eventSource = api.createSSEConnection();
     eventSourceRef.current = eventSource;
 
     eventSource.onmessage = (event) => {
@@ -61,7 +61,7 @@ export const NotificationBell = () => {
     return () => {
       eventSource.close();
     };
-  }, [token]);
+  }, [isAuthenticated]);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -71,16 +71,14 @@ export const NotificationBell = () => {
     setAnchorEl(null);
   };
 
-  const handleMarkAsRead = async (id: string) => {
+  const handleMarkAsOpened = async (id: string) => {
     try {
-      if (token) {
-        await api.markNotificationAsRead(token, id);
-      }
+      await api.markNotificationAsOpened(id);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true, opened: true } : n))
       );
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+      console.error('Failed to mark notification as opened:', error);
     }
   };
 
@@ -94,22 +92,9 @@ export const NotificationBell = () => {
     setDialogOpen(true);
     handleClose();
 
-    // Mark as read
-    if (!notification.read) {
-      await handleMarkAsRead(notification.id);
-    }
-
-    // Track notification open if tracking is enabled
-    if (notification.trackingEnabled && notification.trackingCallbackUrl && user) {
-      try {
-        await api.trackNotificationOpen(
-          notification.notificationId,
-          notification.metadata?.targetUser?.userId,
-          user.email
-        );
-      } catch (error) {
-        console.error('Failed to track notification open:', error);
-      }
+    // Mark as opened (this also sends tracking callback to PM_INTERFACE)
+    if (!notification.opened && !notification.read) {
+      await handleMarkAsOpened(notification.id);
     }
   };
 
