@@ -25,7 +25,7 @@ export const NotificationBell = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
